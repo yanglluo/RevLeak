@@ -72,7 +72,7 @@ export default function Home() {
 
         <div className="flex flex-col items-center space-y-4">
           <Link
-            href="/connect"
+            href="/api/stripe/connect"
             className="rounded-full bg-foreground text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] text-lg px-8 py-3 font-semibold flex items-center space-x-2"
           >
             <span>Connect Stripe (Early Access)</span>
@@ -95,6 +95,6 @@ export default function Home() {
           </p>
         </div>
       </div>
-    </main>
+    </main >
   );
 }
