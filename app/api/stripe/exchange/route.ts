@@ -8,6 +8,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl || supabaseUrl.includes('example.supabase.co')) {
+        console.error('Supabase not configured');
+        return NextResponse.json(
+            { error: 'System Error: Database not configured (SUPABASE_URL).' },
+            { status: 500 }
+        );
+    }
+
     try {
         const { code } = await req.json();
 

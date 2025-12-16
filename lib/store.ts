@@ -21,7 +21,7 @@ export async function saveUser(stripeAccountId: string, email: string) {
 
     if (error) {
         console.error('Supabase saveUser error:', error);
-        throw new Error('Failed to save user');
+        throw new Error(`Database Error: ${error.message} (${error.code || 'unknown'})`);
     }
 }
 

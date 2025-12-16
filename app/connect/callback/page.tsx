@@ -42,7 +42,8 @@ function CallbackContent() {
                     });
 
                     if (!exchangeRes.ok) {
-                        throw new Error('Failed to exchange authorization code');
+                        const errData = await exchangeRes.json();
+                        throw new Error(errData.error || 'Failed to exchange authorization code');
                     }
 
                     const { connectedAccountId, email } = await exchangeRes.json();
@@ -59,7 +60,7 @@ function CallbackContent() {
                 } catch (err) {
                     console.error('Connection failed', err);
                     setAlertStatus('error');
-                    setAlertMessage('Failed to connect account.');
+                    setAlertMessage(err instanceof Error ? err.message : 'Failed to connect account.');
                 } finally {
                     setIsLoadingStats(false);
                 }
