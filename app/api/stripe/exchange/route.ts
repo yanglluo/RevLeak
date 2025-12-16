@@ -5,14 +5,8 @@ import { saveUser, getUser } from '@/lib/store';
 export async function POST(req: Request) {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
-        return NextResponse.json({ error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
-    }
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl || supabaseUrl.includes('example.supabase.co')) {
-        console.error('Supabase not configured');
         return NextResponse.json(
-            { error: 'System Error: Database not configured (SUPABASE_URL).' },
+            { error: 'Missing STRIPE_SECRET_KEY' },
             { status: 500 }
         );
     }
@@ -21,7 +15,10 @@ export async function POST(req: Request) {
         const { code } = await req.json();
 
         if (!code) {
-            return NextResponse.json({ error: 'Missing authorization code' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Missing authorization code' },
+                { status: 400 }
+            );
         }
 
         const stripe = new Stripe(stripeSecretKey, {
@@ -29,19 +26,18 @@ export async function POST(req: Request) {
             apiVersion: '2025-11-17.clover' as any,
         });
 
-        // Exchange code for connected account ID
+        // 🔐 Exchange OAuth code (single-use)
         const response = await stripe.oauth.token({
             grant_type: 'authorization_code',
             code,
         });
 
         const connectedAccountId = response.stripe_user_id;
-
         if (!connectedAccountId) {
             throw new Error('Failed to get connected account ID');
         }
 
-        // Check if user already exists (Idempotency)
+        // 🔁 Idempotency: return existing user if already saved
         const existingUser = await getUser(connectedAccountId);
         if (existingUser) {
             return NextResponse.json({
@@ -50,14 +46,16 @@ export async function POST(req: Request) {
             });
         }
 
-        // Retrieve account details to get email
+        // Fetch account email
         const account = await stripe.accounts.retrieve(connectedAccountId);
         const email = account.email || '';
 
-        // Save mapping
-        if (email) {
-            await saveUser(connectedAccountId, email);
+        if (!email) {
+            throw new Error('Connected Stripe account has no email');
         }
+
+        // Persist mapping
+        await saveUser(connectedAccountId, email);
 
         return NextResponse.json({
             connectedAccountId,
