@@ -1,7 +1,33 @@
-import Link from 'next/link';
+'use client';
+
+import { useState } from 'react';
 import { PRICING_PLANS } from '@/lib/pricing';
 
 export function PricingSection() {
+    const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+    const handleCheckout = async (planId: string) => {
+        setLoadingPlan(planId);
+        try {
+            const res = await fetch('/api/billing/create-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan: planId }),
+            });
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert('Failed to start checkout.');
+                setLoadingPlan(null);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Something went wrong.');
+            setLoadingPlan(null);
+        }
+    };
+
     return (
         <section className="py-20 bg-gray-50 dark:bg-zinc-900/30">
             <div className="container mx-auto px-4">
@@ -17,8 +43,8 @@ export function PricingSection() {
                         <div
                             key={plan.name}
                             className={`relative p-8 rounded-2xl border ${plan.recommended
-                                    ? 'border-indigo-600 dark:border-indigo-500 bg-white dark:bg-zinc-900 shadow-xl scale-105 z-10'
-                                    : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 shadow-sm'
+                                ? 'border-indigo-600 dark:border-indigo-500 bg-white dark:bg-zinc-900 shadow-xl scale-105 z-10'
+                                : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 shadow-sm'
                                 } flex flex-col`}
                         >
                             {plan.recommended && (
@@ -38,15 +64,16 @@ export function PricingSection() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link
-                                href="/billing"
-                                className={`block text-center py-2.5 px-4 rounded-lg font-semibold transition-colors ${plan.recommended
-                                        ? 'bg-indigo-600 text-white hover:bg-indigo-500'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                            <button
+                                onClick={() => plan.id && handleCheckout(plan.id)}
+                                disabled={!!loadingPlan}
+                                className={`block w-full text-center py-2.5 px-4 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${plan.recommended
+                                    ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                Enable Monitoring
-                            </Link>
+                                {loadingPlan === plan.id ? 'Redirecting...' : 'Enable Monitoring'}
+                            </button>
                         </div>
                     ))}
                 </div>

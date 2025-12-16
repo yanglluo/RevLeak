@@ -1,5 +1,6 @@
 export const PRICING_PLANS = [
     {
+        id: 'starter',
         name: 'Starter',
         price: '$49/month',
         features: [
@@ -10,6 +11,7 @@ export const PRICING_PLANS = [
         recommended: false,
     },
     {
+        id: 'growth',
         name: 'Growth',
         price: '$99/month',
         features: [
@@ -20,6 +22,7 @@ export const PRICING_PLANS = [
         recommended: true,
     },
     {
+        id: 'pro',
         name: 'Pro',
         price: '$149/month',
         features: [
