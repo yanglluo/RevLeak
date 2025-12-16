@@ -27,10 +27,19 @@ export async function getRevenueStats() {
         net += txn.net;
     }
 
+    const grossAmount = gross / 100;
+    const feesAmount = fees / 100;
+    const netAmount = net / 100;
+
+    // Calculate effective fee rate as a percentage
+    // Avoid division by zero
+    const effectiveFeeRate = gross > 0 ? (fees / gross) * 100 : 0;
+
     // Convert from cents to major currency units (e.g., dollars)
     return {
-        gross: gross / 100,
-        fees: fees / 100,
-        net: net / 100,
+        gross: grossAmount,
+        fees: feesAmount,
+        net: netAmount,
+        effectiveFeeRate: parseFloat(effectiveFeeRate.toFixed(2)),
     };
 }

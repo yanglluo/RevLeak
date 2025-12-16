@@ -18,20 +18,37 @@ export async function GET() {
         const stats = await getRevenueStats();
         const resend = new Resend(resendApiKey);
 
+        const isHighFee = stats.effectiveFeeRate > 3.5;
+
+        const subject = isHighFee
+            ? 'RevLeak Alert — Stripe Fees May Be Reducing Net Revenue'
+            : 'RevLeak Alert — Revenue Check Complete';
+
+        const insightText = isHighFee
+            ? 'Why this matters:\nStripe fees are higher than average (> 3.5%). This is often caused by cross-border payments, currency conversion (FX) fees, or failed payment retries.'
+            : 'Why this matters:\nFees appear to be within a normal range. RevLeak will continue monitoring for any sudden spikes.';
+
+        const actionText = isHighFee
+            ? 'Suggested action:\nReview your recent international transactions. Consider enabling local currency pricing or adding a settlement currency to reduce FX costs.'
+            : 'Suggested action:\nKeep RevLeak running to catch future leaks automatically. No immediate action required.';
+
         const emailBody = `
 RevLeak completed a revenue check on your Stripe account.
 
 Gross revenue: $${stats.gross.toFixed(2)}
-Fees: $${stats.fees.toFixed(2)}
+Stripe fees: $${stats.fees.toFixed(2)}
 Net revenue: $${stats.net.toFixed(2)}
+Effective fee rate: ${stats.effectiveFeeRate}%
 
-RevLeak monitors these numbers daily and alerts you when unusual changes occur.
+${insightText}
+
+${actionText}
     `.trim();
 
         const { data, error } = await resend.emails.send({
             from: fromEmail,
             to: toEmail,
-            subject: 'RevLeak Alert – Revenue Check Complete',
+            subject: subject,
             text: emailBody,
         });
 

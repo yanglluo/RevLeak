@@ -2,7 +2,14 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+
+interface RevenueStats {
+    gross: number;
+    fees: number;
+    net: number;
+    effectiveFeeRate: number;
+}
 
 function CallbackContent() {
     const searchParams = useSearchParams();
@@ -13,6 +20,28 @@ function CallbackContent() {
     const [isSending, setIsSending] = useState(false);
     const [alertStatus, setAlertStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [alertMessage, setAlertMessage] = useState('');
+    const [stats, setStats] = useState<RevenueStats | null>(null);
+    const [isLoadingStats, setIsLoadingStats] = useState(false);
+
+    useEffect(() => {
+        if (code) {
+            const fetchStats = async () => {
+                setIsLoadingStats(true);
+                try {
+                    const res = await fetch('/api/stripe/check-revenue');
+                    if (res.ok) {
+                        const data = await res.json();
+                        setStats(data);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch stats', err);
+                } finally {
+                    setIsLoadingStats(false);
+                }
+            };
+            fetchStats();
+        }
+    }, [code]);
 
     const handleSendAlert = async () => {
         setIsSending(true);
@@ -70,19 +99,73 @@ function CallbackContent() {
         );
     }
 
-    return (
-        <div className="text-center space-y-6">
-            <h1 className="text-2xl font-bold text-green-600">Connection Successful!</h1>
-            <p className="text-gray-600 dark:text-gray-400">
-                Stripe has successfully authorized your account.
-            </p>
+    const isHighFee = stats && stats.effectiveFeeRate > 3.5;
 
-            <div className="text-left bg-gray-100 dark:bg-gray-900 rounded-lg p-4 w-full overflow-hidden">
-                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Authorization Code</p>
-                <code className="block text-sm font-mono break-all text-indigo-600 dark:text-indigo-400 bg-white dark:bg-black p-3 rounded border border-gray-200 dark:border-gray-800">
-                    {code}
-                </code>
+    return (
+        <div className="text-center space-y-8">
+            <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-green-600">Connection Successful!</h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                    Stripe has successfully authorized your account.
+                </p>
             </div>
+
+            {isLoadingStats && <p className="text-sm text-gray-500">Analyzing revenue data...</p>}
+
+            {stats && (
+                <div className="text-left space-y-6">
+                    {/* Revenue Snapshot */}
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Revenue Snapshot (Last 7 Days)</h3>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p className="text-gray-500">Gross Revenue</p>
+                                <p className="font-medium">${stats.gross.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500">Stripe Fees</p>
+                                <p className="font-medium text-red-500">-${stats.fees.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500">Net Revenue</p>
+                                <p className="font-medium text-green-600">${stats.net.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500">Effective Fee Rate</p>
+                                <p className={`font-medium ${isHighFee ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                                    {stats.effectiveFeeRate}%
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Findings & Action */}
+                    <div className={`p-4 rounded-xl border ${isHighFee ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' : 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'}`}>
+                        <h3 className={`text-sm font-semibold mb-2 ${isHighFee ? 'text-amber-800 dark:text-amber-400' : 'text-blue-800 dark:text-blue-400'}`}>
+                            What RevLeak Found
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                            {isHighFee
+                                ? "Your fee rate looks higher than average (> 3.5%). This is commonly caused by cross-border payments or FX conversion fees."
+                                : "Stripe fees are within a normal range. RevLeak will continue monitoring for any unexpected spikes."}
+                        </p>
+
+                        <h3 className={`text-sm font-semibold mb-2 ${isHighFee ? 'text-amber-800 dark:text-amber-400' : 'text-blue-800 dark:text-blue-400'}`}>
+                            What You Can Do
+                        </h3>
+                        <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                            {isHighFee ? (
+                                <>
+                                    <li>Review international customers</li>
+                                    <li>Consider local pricing or settlement</li>
+                                </>
+                            ) : (
+                                <li>Keep RevLeak alerts enabled to catch future leaks</li>
+                            )}
+                        </ul>
+                    </div>
+                </div>
+            )}
 
             <div className="pt-2 pb-2">
                 <button
@@ -90,7 +173,7 @@ function CallbackContent() {
                     disabled={isSending}
                     className="w-full rounded-md bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-3 text-sm font-semibold shadow-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                    {isSending ? 'Sending Alert...' : 'Send Me a Test Revenue Alert'}
+                    {isSending ? 'Sending Alert...' : '📩 Send Me a Test Revenue Alert'}
                 </button>
                 {alertStatus !== 'idle' && (
                     <p className={`mt-3 text-sm ${alertStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}>
@@ -100,7 +183,7 @@ function CallbackContent() {
             </div>
 
             <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-                <Link href="/" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors">
+                <Link href="/" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 transition-colors">
                     Return to Dashboard
                 </Link>
             </div>
