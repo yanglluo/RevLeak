@@ -15,6 +15,12 @@ export async function POST(req: Request) {
     try {
         const { plan } = await req.json();
 
+        // 🔍 DEBUG LOGS (temporary)
+        console.log('PLAN RECEIVED:', plan);
+        console.log('PRICE_STARTER:', process.env.PRICE_STARTER);
+        console.log('PRICE_GROWTH:', process.env.PRICE_GROWTH);
+        console.log('PRICE_PRO:', process.env.PRICE_PRO);
+
         let priceId;
         switch (plan) {
             case 'starter':
