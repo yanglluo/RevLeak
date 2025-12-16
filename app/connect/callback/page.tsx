@@ -190,6 +190,25 @@ function CallbackContent() {
                 )}
             </div>
 
+            {/* Paywall / Upsell */}
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                <h3 className="text-base font-bold text-indigo-900 dark:text-indigo-300 mb-2">
+                    🚨 Keep RevLeak Monitoring Your Revenue
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                    RevLeak will continue checking your Stripe revenue and alert you when fees, FX, or payment issues quietly reduce net revenue.
+                </p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">
+                    Plans start at $49/month.
+                </p>
+                <Link
+                    href="/billing"
+                    className="block w-full text-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                >
+                    Enable Ongoing Monitoring
+                </Link>
+            </div>
+
             <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
                 <Link href="/" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 transition-colors">
                     Return to Dashboard
