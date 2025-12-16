@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getRevenueStats } from '@/lib/stripe-revenue';
 
-export async function GET() {
+export async function POST() {
     const resendApiKey = process.env.RESEND_API_KEY;
     const fromEmail = process.env.ALERT_FROM_EMAIL;
     const toEmail = process.env.ALERT_TO_EMAIL;

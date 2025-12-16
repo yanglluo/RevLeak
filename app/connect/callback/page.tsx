@@ -49,7 +49,9 @@ function CallbackContent() {
         setAlertMessage('');
 
         try {
-            const res = await fetch('/api/alerts/send');
+            const res = await fetch('/api/alerts/send', {
+                method: 'POST',
+            });
             const data = await res.json();
 
             if (!res.ok) {
@@ -57,7 +59,7 @@ function CallbackContent() {
             }
 
             setAlertStatus('success');
-            setAlertMessage('Test alert sent to your email');
+            setAlertMessage('Test alert sent! Check your inbox.');
         } catch (error) {
             setAlertStatus('error');
             setAlertMessage(error instanceof Error ? error.message : 'Something went wrong');
@@ -179,7 +181,7 @@ function CallbackContent() {
                     disabled={isSending}
                     className="w-full rounded-md bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-3 text-sm font-semibold shadow-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                    {isSending ? 'Sending Alert...' : '📩 Send Me a Test Revenue Alert'}
+                    {isSending ? 'Sending…' : '📩 Send Me a Test Revenue Alert'}
                 </button>
                 {alertStatus !== 'idle' && (
                     <p className={`mt-3 text-sm ${alertStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}>
