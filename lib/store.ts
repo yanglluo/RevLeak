@@ -1,36 +1,46 @@
-import fs from 'fs';
-import path from 'path';
-
-const DATA_FILE = path.join(process.cwd(), 'data', 'users.json');
+import { supabase } from '@/lib/supabase';
 
 interface UserData {
     stripeAccountId: string;
     email: string;
-    createdAt: string;
+    createdAt?: string;
 }
 
-// Ensure data directory exists
-if (!fs.existsSync(path.dirname(DATA_FILE))) {
-    fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
+export async function saveUser(stripeAccountId: string, email: string) {
+    // Upsert user by stripe_account_id
+    const { error } = await supabase
+        .from('users')
+        .upsert(
+            {
+                stripe_account_id: stripeAccountId,
+                email: email,
+                updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'stripe_account_id' }
+        );
+
+    if (error) {
+        console.error('Supabase saveUser error:', error);
+        throw new Error('Failed to save user');
+    }
 }
 
-// Initialize file if not exists
-if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({}));
-}
+export async function getUser(stripeAccountId: string): Promise<UserData | null> {
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('stripe_account_id', stripeAccountId)
+        .single();
 
-export function saveUser(stripeAccountId: string, email: string) {
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    data[stripeAccountId] = {
-        stripeAccountId,
-        email,
-        createdAt: new Date().toISOString(),
+    if (error) {
+        if (error.code === 'PGRST116') return null; // Not found
+        console.error('Supabase getUser error:', error);
+        return null; // Fail safe
+    }
+
+    return {
+        stripeAccountId: data.stripe_account_id,
+        email: data.email,
+        createdAt: data.created_at,
     };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
-
-export function getUser(stripeAccountId: string): UserData | null {
-    if (!fs.existsSync(DATA_FILE)) return null;
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    return data[stripeAccountId] || null;
 }

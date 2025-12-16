@@ -9,7 +9,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing account ID or email' }, { status: 400 });
         }
 
-        saveUser(stripeAccountId, email);
+        await saveUser(stripeAccountId, email);
 
         return NextResponse.json({ success: true });
     } catch {

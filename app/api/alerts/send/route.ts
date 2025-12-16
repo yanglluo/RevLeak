@@ -29,7 +29,7 @@ export async function POST(req: Request) {
         // Wait, I can't add imports at top with this tool easily in one go if I change the middle.
         // I'll assume I add the import separately or use `require`.
         const { getUser } = await import('@/lib/store');
-        const user = getUser(stripeAccountId);
+        const user = await getUser(stripeAccountId);
 
         if (!user || !user.email) {
             return NextResponse.json({ error: 'User not found or missing email' }, { status: 404 });

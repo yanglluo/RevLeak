@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
         // Save mapping
         if (email) {
-            saveUser(connectedAccountId, email);
+            await saveUser(connectedAccountId, email);
         }
 
         return NextResponse.json({
