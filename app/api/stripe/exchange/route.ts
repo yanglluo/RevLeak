@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { saveUser } from '@/lib/store';
+import { saveUser, getUser } from '@/lib/store';
 
 export async function POST(req: Request) {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -30,6 +30,15 @@ export async function POST(req: Request) {
 
         if (!connectedAccountId) {
             throw new Error('Failed to get connected account ID');
+        }
+
+        // Check if user already exists (Idempotency)
+        const existingUser = await getUser(connectedAccountId);
+        if (existingUser) {
+            return NextResponse.json({
+                connectedAccountId,
+                email: existingUser.email,
+            });
         }
 
         // Retrieve account details to get email
