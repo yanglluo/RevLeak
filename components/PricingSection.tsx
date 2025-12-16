@@ -18,7 +18,7 @@ export function PricingSection() {
             if (data.url) {
                 window.location.href = data.url;
             } else {
-                alert('Failed to start checkout.');
+                alert(data.error || 'Failed to start checkout.');
                 setLoadingPlan(null);
             }
         } catch (error) {
