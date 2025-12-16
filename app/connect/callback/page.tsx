@@ -2,13 +2,40 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 
 function CallbackContent() {
     const searchParams = useSearchParams();
     const code = searchParams.get('code');
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
+
+    const [isSending, setIsSending] = useState(false);
+    const [alertStatus, setAlertStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [alertMessage, setAlertMessage] = useState('');
+
+    const handleSendAlert = async () => {
+        setIsSending(true);
+        setAlertStatus('idle');
+        setAlertMessage('');
+
+        try {
+            const res = await fetch('/api/alerts/send');
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to send alert');
+            }
+
+            setAlertStatus('success');
+            setAlertMessage('Test alert sent to your email');
+        } catch (error) {
+            setAlertStatus('error');
+            setAlertMessage(error instanceof Error ? error.message : 'Something went wrong');
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     if (error) {
         return (
@@ -57,7 +84,22 @@ function CallbackContent() {
                 </code>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-2 pb-2">
+                <button
+                    onClick={handleSendAlert}
+                    disabled={isSending}
+                    className="w-full rounded-md bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-3 text-sm font-semibold shadow-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                    {isSending ? 'Sending Alert...' : 'Send Me a Test Revenue Alert'}
+                </button>
+                {alertStatus !== 'idle' && (
+                    <p className={`mt-3 text-sm ${alertStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                        {alertMessage}
+                    </p>
+                )}
+            </div>
+
+            <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
                 <Link href="/" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors">
                     Return to Dashboard
                 </Link>
