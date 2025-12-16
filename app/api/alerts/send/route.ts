@@ -2,20 +2,42 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getRevenueStats } from '@/lib/stripe-revenue';
 
-export async function POST() {
+export async function POST(req: Request) {
     const resendApiKey = process.env.RESEND_API_KEY;
     const fromEmail = process.env.ALERT_FROM_EMAIL;
-    const toEmail = process.env.ALERT_TO_EMAIL;
+    // Remove global ALERT_TO_EMAIL usage
 
-    if (!resendApiKey || !fromEmail || !toEmail) {
+    if (!resendApiKey || !fromEmail) {
         return NextResponse.json(
-            { error: 'Missing environment variables: RESEND_API_KEY, ALERT_FROM_EMAIL, or ALERT_TO_EMAIL' },
+            { error: 'Missing environment variables: RESEND_API_KEY or ALERT_FROM_EMAIL' },
             { status: 500 }
         );
     }
 
     try {
-        const stats = await getRevenueStats();
+        const { stripeAccountId } = await req.json();
+
+        // If no account ID provided, we can't route the alert correctly
+        if (!stripeAccountId) {
+            return NextResponse.json({ error: 'Missing stripeAccountId' }, { status: 400 });
+        }
+
+        // Look up the user's email
+        // We'll dynamically import getUser to avoid issues if store.ts isn't perfect yet, 
+        // but since I created it, static import is fine. 
+        // Let's use the standard import I will add at the top.
+        // Wait, I can't add imports at top with this tool easily in one go if I change the middle.
+        // I'll assume I add the import separately or use `require`.
+        const { getUser } = await import('@/lib/store');
+        const user = getUser(stripeAccountId);
+
+        if (!user || !user.email) {
+            return NextResponse.json({ error: 'User not found or missing email' }, { status: 404 });
+        }
+
+        const toEmail = user.email;
+
+        const stats = await getRevenueStats(stripeAccountId);
         const resend = new Resend(resendApiKey);
 
         const isHighFee = stats.effectiveFeeRate > 3.5;

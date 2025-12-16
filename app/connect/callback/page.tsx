@@ -23,27 +23,72 @@ function CallbackContent() {
     const [stats, setStats] = useState<RevenueStats | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
 
+    // New state for account & email
+    const [connectedAccountId, setConnectedAccountId] = useState<string | null>(null);
+    const [alertEmail, setAlertEmail] = useState<string>('');
+    const [isEditingEmail, setIsEditingEmail] = useState(false);
+    const [emailInput, setEmailInput] = useState('');
+
     useEffect(() => {
-        if (code) {
-            const fetchStats = async () => {
+        if (code && !connectedAccountId) {
+            const initConnection = async () => {
                 setIsLoadingStats(true);
                 try {
-                    const res = await fetch('/api/stripe/check-revenue');
-                    if (res.ok) {
-                        const data = await res.json();
+                    // 1. Exchange code for account ID & Email
+                    const exchangeRes = await fetch('/api/stripe/exchange', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code }),
+                    });
+
+                    if (!exchangeRes.ok) {
+                        throw new Error('Failed to exchange authorization code');
+                    }
+
+                    const { connectedAccountId, email } = await exchangeRes.json();
+                    setConnectedAccountId(connectedAccountId);
+                    setAlertEmail(email);
+                    setEmailInput(email);
+
+                    // 2. Fetch revenue stats for this account
+                    const statsRes = await fetch(`/api/stripe/check-revenue?stripeAccountId=${connectedAccountId}`);
+                    if (statsRes.ok) {
+                        const data = await statsRes.json();
                         setStats(data);
                     }
                 } catch (err) {
-                    console.error('Failed to fetch stats', err);
+                    console.error('Connection failed', err);
+                    setAlertStatus('error');
+                    setAlertMessage('Failed to connect account.');
                 } finally {
                     setIsLoadingStats(false);
                 }
             };
-            fetchStats();
+            initConnection();
         }
-    }, [code]);
+    }, [code, connectedAccountId]);
+
+    const handleUpdateEmail = async () => {
+        if (!connectedAccountId) return;
+        try {
+            const res = await fetch('/api/user/update-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stripeAccountId: connectedAccountId, email: emailInput }),
+            });
+            if (res.ok) {
+                setAlertEmail(emailInput);
+                setIsEditingEmail(false);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to update email');
+        }
+    };
 
     const handleSendAlert = async () => {
+        if (!connectedAccountId) return;
+
         setIsSending(true);
         setAlertStatus('idle');
         setAlertMessage('');
@@ -51,6 +96,8 @@ function CallbackContent() {
         try {
             const res = await fetch('/api/alerts/send', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stripeAccountId: connectedAccountId }),
             });
             const data = await res.json();
 
@@ -105,11 +152,34 @@ function CallbackContent() {
 
     return (
         <div className="text-center space-y-8">
-            <div className="space-y-2">
+            <div className="space-y-4">
                 <h1 className="text-2xl font-bold text-green-600">Connection Successful!</h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    Stripe has successfully authorized your account.
-                </p>
+
+                {/* Email Confirmation / Editor */}
+                <div className="text-sm bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg inline-block border border-gray-100 dark:border-gray-800">
+                    {isEditingEmail ? (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="email"
+                                value={emailInput}
+                                onChange={(e) => setEmailInput(e.target.value)}
+                                className="px-2 py-1 rounded border dark:bg-zinc-900 border-gray-300 dark:border-gray-700"
+                            />
+                            <button onClick={handleUpdateEmail} className="text-xs font-semibold text-indigo-600">Save</button>
+                            <button onClick={() => setIsEditingEmail(false)} className="text-xs text-gray-400">Cancel</button>
+                        </div>
+                    ) : (
+                        <p className="text-gray-600 dark:text-gray-400">
+                            RevLeak will send alerts to <span className="font-semibold text-gray-900 dark:text-white">{alertEmail || '...'}</span>
+                            <button
+                                onClick={() => setIsEditingEmail(true)}
+                                className="ml-2 text-xs text-indigo-600 hover:underline"
+                            >
+                                (Change)
+                            </button>
+                        </p>
+                    )}
+                </div>
             </div>
 
             {isLoadingStats && <p className="text-sm text-gray-500">Analyzing revenue data...</p>}
@@ -178,7 +248,7 @@ function CallbackContent() {
             <div className="pt-2 pb-2">
                 <button
                     onClick={handleSendAlert}
-                    disabled={isSending}
+                    disabled={isSending || !connectedAccountId}
                     className="w-full rounded-md bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-3 text-sm font-semibold shadow-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {isSending ? 'Sending…' : '📩 Send Me a Test Revenue Alert'}

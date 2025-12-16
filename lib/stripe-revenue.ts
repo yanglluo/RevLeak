@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 
-export async function getRevenueStats() {
+export async function getRevenueStats(stripeAccountId?: string) {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
     if (!stripeSecretKey) {
@@ -9,13 +9,14 @@ export async function getRevenueStats() {
 
     const stripe = new Stripe(stripeSecretKey, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiVersion: '2025-11-17.clover' as any, // Cast to any to avoid type mismatch issues if types are outdated
+        apiVersion: '2025-11-17.clover' as any,
     });
 
     // Fetch latest 100 balance transactions
-    const transactions = await stripe.balanceTransactions.list({
-        limit: 100,
-    });
+    const transactions = await stripe.balanceTransactions.list(
+        { limit: 100 },
+        stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
+    );
 
     let gross = 0;
     let fees = 0;
