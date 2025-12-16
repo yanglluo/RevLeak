@@ -25,16 +25,13 @@ export async function GET() {
             : 'RevLeak Alert — Revenue Check Complete';
 
         const insightText = isHighFee
-            ? 'Why this matters:\nStripe fees are higher than average (> 3.5%). This is often caused by cross-border payments, currency conversion (FX) fees, or failed payment retries.'
-            : 'Why this matters:\nFees appear to be within a normal range. RevLeak will continue monitoring for any sudden spikes.';
-
-        const actionText = isHighFee
-            ? 'Suggested action:\nReview your recent international transactions. Consider enabling local currency pricing or adding a settlement currency to reduce FX costs.'
-            : 'Suggested action:\nKeep RevLeak running to catch future leaks automatically. No immediate action required.';
+            ? 'Why this matters:\nStripe fees are higher than average (> 3.5%). This is often caused by currency conversion (FX) fees or cross-border payments.'
+            : 'Why this matters:\nFees are currently within a normal range.';
 
         const emailBody = `
 RevLeak completed a revenue check on your Stripe account.
 
+Revenue Summary:
 Gross revenue: $${stats.gross.toFixed(2)}
 Stripe fees: $${stats.fees.toFixed(2)}
 Net revenue: $${stats.net.toFixed(2)}
@@ -42,7 +39,23 @@ Effective fee rate: ${stats.effectiveFeeRate}%
 
 ${insightText}
 
-${actionText}
+What RevLeak watches for:
+• FX conversion spikes from international customers
+• Failed payments that reduce net revenue
+• Sudden fee increases from card mix changes
+• Silent drops in net revenue despite stable sales
+
+These issues often happen without obvious alerts inside Stripe.
+
+What happens next:
+RevLeak will continue monitoring your Stripe account and alert you if:
+• Fees exceed your normal range
+• Net revenue drops unexpectedly
+• FX-related costs spike
+
+You’ll only hear from RevLeak when something needs attention.
+
+Many SaaS founders don’t notice these issues until thousands in revenue is already lost.
     `.trim();
 
         const { data, error } = await resend.emails.send({

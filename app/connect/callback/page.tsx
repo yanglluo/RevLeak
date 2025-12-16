@@ -139,6 +139,17 @@ function CallbackContent() {
                         </div>
                     </div>
 
+                    {/* Why RevLeak Exists */}
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Why RevLeak Exists</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            Stripe shows you what happened. RevLeak focuses on what quietly reduces what you keep.
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            RevLeak continuously monitors fees, FX costs, and failed payments so you don’t have to manually dig through Stripe reports.
+                        </p>
+                    </div>
+
                     {/* Findings & Action */}
                     <div className={`p-4 rounded-xl border ${isHighFee ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' : 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'}`}>
                         <h3 className={`text-sm font-semibold mb-2 ${isHighFee ? 'text-amber-800 dark:text-amber-400' : 'text-blue-800 dark:text-blue-400'}`}>
@@ -153,16 +164,11 @@ function CallbackContent() {
                         <h3 className={`text-sm font-semibold mb-2 ${isHighFee ? 'text-amber-800 dark:text-amber-400' : 'text-blue-800 dark:text-blue-400'}`}>
                             What You Can Do
                         </h3>
-                        <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                            {isHighFee ? (
-                                <>
-                                    <li>Review international customers</li>
-                                    <li>Consider local pricing or settlement</li>
-                                </>
-                            ) : (
-                                <li>Keep RevLeak alerts enabled to catch future leaks</li>
-                            )}
-                        </ul>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                            {isHighFee
+                                ? "Review your recent international transactions. Consider enabling local currency pricing or adding a settlement currency to reduce FX costs."
+                                : "Even when everything looks normal, RevLeak keeps watching for changes that could impact your net revenue."}
+                        </p>
                     </div>
                 </div>
             )}
